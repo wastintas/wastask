@@ -1,193 +1,114 @@
-# WasTask - AI-Native Project Management System
+# WasTask - AI-Powered Project Management
 
-WasTask is a revolutionary AI-native project management system built on Google's Agent Development Kit (ADK). It combines multiple specialized AI agents to automate project planning, task management, GitHub integration, and analytics.
+WasTask is an intelligent project management system that transforms Product Requirements Documents (PRDs) into actionable tasks using AI agents.
 
-## Features
+## 🚀 Quick Start
 
-- **Multi-Agent Architecture**: Specialized AI agents for different aspects of project management
-- **Intelligent Planning**: Advanced task decomposition and timeline estimation
-- **GitHub Integration**: Bidirectional sync with GitHub repositories
-- **Cost Optimization**: Smart model routing and semantic caching
-- **CLI & Web Interface**: Comprehensive command-line and web interfaces
-- **Real-time Analytics**: Project progress tracking and performance insights
-
-## Quick Start
-
-### Prerequisites
-
-- Python 3.11+
-- Redis (for caching)
-- PostgreSQL (for data persistence)
-- API keys for LLM providers (OpenAI, Anthropic, Google)
-
-### Installation
-
-1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd wastask
+# Setup WasTask (installs dependencies, creates config)
+python setup.py
+
+# Analyze a PRD and generate tasks  
+uv run python wastask.py prd analyze my_project.md
+
+# Save results to database
+uv run python wastask.py prd analyze my_project.md --output db
+
+# View projects and tasks
+uv run python wastask.py db list
+uv run python wastask.py db show 1
 ```
 
-2. Install dependencies:
+## 🎯 Key Features
+
+- **AI-Powered PRD Analysis**: Automatically analyze and enhance PRD quality
+- **Intelligent Task Generation**: Generate detailed tasks with effort estimates  
+- **Technology Recommendations**: Get tech stack suggestions based on requirements
+- **Database Integration**: Store and manage projects with migration system
+- **Rich CLI Interface**: Beautiful terminal output with tables and progress
+
+## 📊 What WasTask Does
+
+**Input**: Simple PRD document  
+**Output**: Complete project breakdown with:
+- 📝 Enhanced PRD (AI-improved)
+- 🛠️ Technology recommendations
+- 📋 Detailed task list with estimates
+- ⏱️ Timeline and complexity analysis
+- 🗄️ Everything saved to database
+
+## 🛠️ CLI Commands
+
 ```bash
-pip install -e .
+# PRD Analysis
+uv run python wastask.py prd analyze <file>               # Analyze PRD
+uv run python wastask.py prd analyze <file> --output db   # Save to database
+
+# Database Management  
+uv run python wastask.py db setup                         # Setup database
+uv run python wastask.py db list                          # List projects
+uv run python wastask.py db show <id>                     # Project details
+uv run python wastask.py db stats                         # Statistics
+
+# Migrations
+uv run python wastask.py migrate status                   # Migration status
+uv run python wastask.py migrate run                      # Run migrations
 ```
 
-3. Set up environment:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-4. Initialize the database:
-```bash
-# Database setup commands will be added
-```
-
-### Usage
-
-#### CLI Commands
-
-Create a new project:
-```bash
-wastask project create --name "My Project" --description "Project description"
-```
-
-Create a detailed project plan:
-```bash
-wastask project plan proj_001 "Build a web application with user authentication"
-```
-
-Create tasks:
-```bash
-wastask task create --project proj_001 --title "Setup database" --priority high
-```
-
-Chat with the AI assistant:
-```bash
-wastask chat "What tasks should I prioritize this week?"
-```
-
-List projects:
-```bash
-wastask project list --status active
-```
-
-Analyze project progress:
-```bash
-wastask analyze --project proj_001
-```
-
-#### Interactive Mode
-
-For a more guided experience, use the interactive mode:
-```bash
-wastask project create --interactive
-```
-
-## Architecture
-
-### Core Agents
-
-1. **Coordinator Agent**: Main orchestrator that routes requests to specialized agents
-2. **Planning Agent**: Handles project planning, task decomposition, and timeline estimation
-3. **Task Agent**: Manages task lifecycle, assignments, and status updates
-4. **GitHub Agent**: Integrates with GitHub for issue sync and PR management
-5. **Analytics Agent**: Provides insights, reports, and performance analysis
-
-### Technology Stack
-
-- **Framework**: Google ADK for agent orchestration
-- **Backend**: FastAPI for REST API
-- **Database**: PostgreSQL with SQLAlchemy ORM
-- **Cache**: Redis for semantic caching
-- **CLI**: Click with Rich for beautiful terminal interfaces
-- **LLM Integration**: LiteLLM for model flexibility
-
-## Configuration
-
-The system can be configured through environment variables or configuration files. Key settings include:
-
-- **Model Selection**: Choose between different LLM models for different complexity levels
-- **Cost Management**: Set daily cost limits and enable semantic caching
-- **GitHub Integration**: Configure repository access and webhook settings
-- **Security**: Authentication, rate limiting, and access control
-
-## Development
-
-### Project Structure
+## 📁 Project Structure
 
 ```
 wastask/
-├── agents/          # AI agents
-├── core/           # Core models and utilities
-├── api/            # REST API endpoints
-├── cli/            # Command-line interface
-├── tools/          # Shared tools and functions
-├── config/         # Configuration management
-└── tests/          # Test suites
+├── wastask.py              # Main CLI entry point
+├── setup.py               # Setup script
+├── wastask_simple.py      # Core analysis engine
+├── agents/                # AI agents for analysis
+├── migrations/            # Database migrations
+├── docs/                  # All documentation
+├── demos/                 # Usage examples
+└── tests/                 # Test suite
 ```
 
-### Running Tests
+## 📚 Documentation
 
-```bash
-pytest tests/
+All documentation is organized in the [`docs/`](docs/) folder:
+
+- **[Getting Started](docs/README.md)** - Complete setup guide
+- **[Documentation Index](docs/INDEX.md)** - All docs organized by category
+- **[Test Results](docs/test_results.md)** - Validation and examples
+- **[Migration System](docs/migrations_implementation_summary.md)** - Database architecture
+
+## 🎉 Example Output
+
+```
+🎯 Project: E-commerce Platform
+📊 Complexity: 7.2/10
+⏱️ Timeline: 12-14 weeks
+📈 Total Hours: 406h
+
+🛠️ Recommended Technologies:
+  🟢 React Router v7 vlatest
+  🟢 PostgreSQL v16.0
+  🟢 Drizzle ORM vlatest
+
+📝 Generated Tasks (49 total):
+  🔴 High Priority: 12 tasks
+  🟡 Medium Priority: 23 tasks
+  🟢 Low Priority: 14 tasks
 ```
 
-### Code Quality
+## 🗄️ Database
 
-```bash
-# Format code
-black wastask/
+WasTask uses PostgreSQL with a professional migration system:
+- Version-controlled schema changes
+- Automatic migration execution
+- Complete project and task persistence
 
-# Lint code
-ruff check wastask/
-
-# Type checking
-mypy wastask/
-```
-
-## API Documentation
-
-When running the server, API documentation is available at:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-## License
+## 📄 License
 
 MIT License - see LICENSE file for details.
 
-## Support
+---
 
-For issues and questions:
-- GitHub Issues: [Repository Issues](https://github.com/your-org/wastask/issues)
-- Documentation: [Full Documentation](https://wastask.readthedocs.io)
-
-## Roadmap
-
-### Phase 1 (Current)
-- [x] Core agent architecture
-- [x] Basic CLI interface
-- [x] Project and task management
-- [ ] GitHub integration
-- [ ] Web API
-
-### Phase 2 (Next)
-- [ ] Advanced analytics
-- [ ] Team collaboration features
-- [ ] Mobile app
-- [ ] Integrations (Slack, Jira, etc.)
-
-### Phase 3 (Future)
-- [ ] AI-powered code generation
-- [ ] Advanced workflow automation
-- [ ] Enterprise features
-- [ ] Multi-tenant support
+🚀 **Ready to transform your PRDs into actionable projects?**  
+👉 **Start with**: `python setup.py`

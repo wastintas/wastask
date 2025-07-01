@@ -17,7 +17,7 @@ class WasTaskDatabase:
     
     def _get_default_connection(self) -> str:
         """Configuração padrão de conexão com PostgreSQL"""
-        return "postgresql://myuser:mypassword@localhost:5432/mydb"
+        return "postgresql://wastask:password@localhost:5433/wastask"
     
     async def initialize(self):
         """Inicializar pool de conexões"""
@@ -25,16 +25,15 @@ class WasTaskDatabase:
         print("✅ Database connection pool created")
     
     async def create_schema(self):
-        """Criar schema do banco de dados"""
-        schema_file = Path(__file__).parent / "database_schema.sql"
+        """Criar schema do banco de dados usando migrations"""
+        from migrations.migration_manager import MigrationManager
         
-        if not schema_file.exists():
-            raise FileNotFoundError("Schema file not found: database_schema.sql")
-        
-        schema_sql = schema_file.read_text(encoding='utf-8')
-        
-        async with self.pool.acquire() as conn:
-            await conn.execute(schema_sql)
+        migration_manager = MigrationManager(self.connection_string)
+        try:
+            await migration_manager.initialize()
+            await migration_manager.migrate()
+        finally:
+            await migration_manager.close()
         
         print("✅ Database schema created successfully")
     
@@ -77,7 +76,7 @@ class WasTaskDatabase:
         stats = results.get('statistics', {})
         
         query = """
-        INSERT INTO projects (
+        INSERT INTO wastask_projects (
             name, description, original_prd, enhanced_prd,
             prd_quality_before, prd_quality_after,
             complexity_score, timeline, total_hours, package_manager, status
@@ -108,7 +107,7 @@ class WasTaskDatabase:
             return
         
         query = """
-        INSERT INTO project_technologies (
+        INSERT INTO wastask_project_technologies (
             project_id, category, technology, version, reason, confidence
         ) VALUES ($1, $2, $3, $4, $5, $6)
         """
@@ -130,7 +129,7 @@ class WasTaskDatabase:
             return
         
         query = """
-        INSERT INTO project_features (
+        INSERT INTO wastask_project_features (
             project_id, name, description, priority, complexity, estimated_effort
         ) VALUES ($1, $2, $3, $4, $5, $6)
         """
@@ -153,7 +152,7 @@ class WasTaskDatabase:
         
         # Salvar tarefas
         task_query = """
-        INSERT INTO tasks (
+        INSERT INTO wastask_tasks (
             project_id, title, description, priority, estimated_hours, 
             complexity, category, status
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -183,7 +182,7 @@ class WasTaskDatabase:
             # Salvar tags
             tags = task.get('tags', [])
             if tags:
-                tag_query = "INSERT INTO task_tags (task_id, tag) VALUES ($1, $2)"
+                tag_query = "INSERT INTO wastask_task_tags (task_id, tag) VALUES ($1, $2)"
                 for tag in tags:
                     await conn.execute(tag_query, task_id, tag)
         
@@ -192,7 +191,7 @@ class WasTaskDatabase:
             dependencies = task.get('dependencies', [])
             if dependencies and task.get('id') in task_ids:
                 task_id = task_ids[task['id']]
-                dep_query = "INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES ($1, $2)"
+                dep_query = "INSERT INTO wastask_task_dependencies (task_id, depends_on_task_id) VALUES ($1, $2)"
                 
                 for dep_id in dependencies:
                     if dep_id in task_ids:
@@ -204,7 +203,7 @@ class WasTaskDatabase:
             return
         
         query = """
-        INSERT INTO setup_commands (project_id, command_type, command_text, execution_order)
+        INSERT INTO wastask_setup_commands (project_id, command_type, command_text, execution_order)
         VALUES ($1, $2, $3, $4)
         """
         
@@ -225,7 +224,7 @@ class WasTaskDatabase:
         if not risks:
             return
         
-        query = "INSERT INTO project_risks (project_id, risk_description) VALUES ($1, $2)"
+        query = "INSERT INTO wastask_project_risks (project_id, risk_description) VALUES ($1, $2)"
         
         for risk in risks:
             await conn.execute(query, project_id, risk)
@@ -235,7 +234,7 @@ class WasTaskDatabase:
         if not questions:
             return
         
-        query = "INSERT INTO clarification_questions (project_id, question) VALUES ($1, $2)"
+        query = "INSERT INTO wastask_clarification_questions (project_id, question) VALUES ($1, $2)"
         
         for question in questions:
             await conn.execute(query, project_id, question)
@@ -244,34 +243,34 @@ class WasTaskDatabase:
         """Recuperar projeto completo por ID"""
         async with self.pool.acquire() as conn:
             # Dados principais do projeto
-            project_query = "SELECT * FROM projects WHERE id = $1"
-            project = await conn.fetchrow(project_query)
+            project_query = "SELECT * FROM wastask_projects WHERE id = $1"
+            project = await conn.fetchrow(project_query, project_id)
             
             if not project:
                 return None
             
             # Tecnologias
-            tech_query = "SELECT * FROM project_technologies WHERE project_id = $1 ORDER BY confidence DESC"
+            tech_query = "SELECT * FROM wastask_project_technologies WHERE project_id = $1 ORDER BY confidence DESC"
             technologies = await conn.fetch(tech_query, project_id)
             
             # Features
-            features_query = "SELECT * FROM project_features WHERE project_id = $1"
+            features_query = "SELECT * FROM wastask_project_features WHERE project_id = $1"
             features = await conn.fetch(features_query, project_id)
             
             # Tarefas
-            tasks_query = "SELECT * FROM tasks WHERE project_id = $1 ORDER BY priority DESC, created_at"
+            tasks_query = "SELECT * FROM wastask_tasks WHERE project_id = $1 ORDER BY priority DESC, created_at"
             tasks = await conn.fetch(tasks_query, project_id)
             
             # Comandos de setup
-            setup_query = "SELECT * FROM setup_commands WHERE project_id = $1 ORDER BY execution_order"
+            setup_query = "SELECT * FROM wastask_setup_commands WHERE project_id = $1 ORDER BY execution_order"
             setup_commands = await conn.fetch(setup_query, project_id)
             
             # Riscos
-            risks_query = "SELECT risk_description FROM project_risks WHERE project_id = $1"
+            risks_query = "SELECT risk_description FROM wastask_project_risks WHERE project_id = $1"
             risks = await conn.fetch(risks_query, project_id)
             
             # Questões
-            questions_query = "SELECT * FROM clarification_questions WHERE project_id = $1"
+            questions_query = "SELECT * FROM wastask_clarification_questions WHERE project_id = $1"
             questions = await conn.fetch(questions_query, project_id)
             
             return {
@@ -289,7 +288,7 @@ class WasTaskDatabase:
         query = """
         SELECT id, name, description, complexity_score, timeline, 
                status, created_at, updated_at
-        FROM projects 
+        FROM wastask_projects 
         ORDER BY created_at DESC 
         LIMIT $1
         """
@@ -301,7 +300,7 @@ class WasTaskDatabase:
     async def update_task_status(self, task_id: int, status: str, assigned_to: str = None):
         """Atualizar status de tarefa"""
         query = """
-        UPDATE tasks 
+        UPDATE wastask_tasks 
         SET status = $1, assigned_to = $2,
             started_at = CASE WHEN $1 = 'in_progress' AND started_at IS NULL THEN CURRENT_TIMESTAMP ELSE started_at END,
             completed_at = CASE WHEN $1 = 'completed' THEN CURRENT_TIMESTAMP ELSE NULL END
@@ -314,11 +313,11 @@ class WasTaskDatabase:
     async def get_project_stats(self) -> Dict[str, Any]:
         """Estatísticas gerais"""
         queries = {
-            'total_projects': "SELECT COUNT(*) FROM projects",
-            'total_tasks': "SELECT COUNT(*) FROM tasks",
-            'completed_tasks': "SELECT COUNT(*) FROM tasks WHERE status = 'completed'",
-            'active_projects': "SELECT COUNT(*) FROM projects WHERE status != 'completed'",
-            'avg_complexity': "SELECT AVG(complexity_score) FROM projects WHERE complexity_score > 0"
+            'total_projects': "SELECT COUNT(*) FROM wastask_projects",
+            'total_tasks': "SELECT COUNT(*) FROM wastask_tasks",
+            'completed_tasks': "SELECT COUNT(*) FROM wastask_tasks WHERE status = 'completed'",
+            'active_projects': "SELECT COUNT(*) FROM wastask_projects WHERE status != 'completed'",
+            'avg_complexity': "SELECT AVG(complexity_score) FROM wastask_projects WHERE complexity_score > 0"
         }
         
         stats = {}

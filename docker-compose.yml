@@ -6,7 +6,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://wastask:password@postgres:5432/wastask
+      - DATABASE_URL=postgresql://wastask:password@postgres:5433/wastask
       - REDIS_URL=redis://redis:6379/0
     depends_on:
       - postgres
