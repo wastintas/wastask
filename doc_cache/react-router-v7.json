@@ -1,0 +1,40 @@
+{
+  "cached_at": 1751349582.585461,
+  "doc": {
+    "name": "React Router v7",
+    "version": "7.0.0",
+    "install_commands": [
+      "npx create-react-router@latest my-app"
+    ],
+    "setup_commands": [
+      "cd my-app",
+      "npm install"
+    ],
+    "config_files": {
+      "vite.config.ts": "import { defineConfig } from \"vite\";\nimport { reactRouter } from \"@react-router/dev/vite\";\n\nexport default defineConfig({\n  plugins: [reactRouter()],\n});",
+      "app/root.tsx": "import {\n  Links,\n  Meta,\n  Outlet,\n  Scripts,\n  ScrollRestoration,\n} from \"react-router\";\n\nexport default function App() {\n  return (\n    <html lang=\"en\">\n      <head>\n        <meta charSet=\"utf-8\" />\n        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n        <Meta />\n        <Links />\n      </head>\n      <body>\n        <Outlet />\n        <ScrollRestoration />\n        <Scripts />\n      </body>\n    </html>\n  );\n}"
+    },
+    "scripts": {
+      "dev": "react-router dev",
+      "build": "react-router build",
+      "start": "react-router-serve ./build/server/index.js",
+      "typecheck": "tsc"
+    },
+    "dependencies": [
+      "react",
+      "react-dom",
+      "@react-router/node",
+      "@react-router/serve"
+    ],
+    "dev_dependencies": [
+      "@react-router/dev",
+      "@types/react",
+      "@types/react-dom",
+      "typescript",
+      "vite"
+    ],
+    "environment_setup": [],
+    "documentation_url": "https://reactrouter.com/start/framework/installation",
+    "last_updated": "2025-07-01 02:59:42"
+  }
+}

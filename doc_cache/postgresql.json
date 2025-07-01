@@ -1,0 +1,28 @@
+{
+  "cached_at": 1751349588.229975,
+  "doc": {
+    "name": "PostgreSQL",
+    "version": "16",
+    "install_commands": [],
+    "setup_commands": [],
+    "config_files": {},
+    "scripts": {},
+    "dependencies": [],
+    "dev_dependencies": [],
+    "environment_setup": [
+      "# Using Docker (recommended):",
+      "docker run -d --name postgres \\",
+      "  -e POSTGRES_USER=myuser \\",
+      "  -e POSTGRES_PASSWORD=mypassword \\",
+      "  -e POSTGRES_DB=mydb \\",
+      "  -p 5432:5432 \\",
+      "  postgres:16-alpine",
+      "",
+      "# Alternative: Local installation",
+      "# macOS: brew install postgresql@16",
+      "# Ubuntu: sudo apt install postgresql-16"
+    ],
+    "documentation_url": "https://www.postgresql.org/docs/current/installation.html",
+    "last_updated": "2025-07-01 02:59:48"
+  }
+}

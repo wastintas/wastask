@@ -1,0 +1,22 @@
+[
+  {
+    "id": "a2463eb8-4734-4c13-b6ce-68cec5440979",
+    "name": "Sistema de Gestão Hospitalar",
+    "description": "Plataforma completa para gestão de hospitais e clínicas",
+    "status": "planning",
+    "owner_id": "5933bbf6-95ec-47dc-a6fa-ce80f0d3f734",
+    "github_repo": null,
+    "created_at": "2025-07-01T04:27:27.189728+00:00",
+    "updated_at": "2025-07-01T04:27:27.190008+00:00"
+  },
+  {
+    "id": "4df2cbc8-e5a2-4dc7-9fe7-9fb88203b6c1",
+    "name": "Sistema de Gestão Hospitalar",
+    "description": "Plataforma completa para gestão de hospitais e clínicas",
+    "status": "planning",
+    "owner_id": "dcbf76fe-ac57-4665-9b0f-f35535b25ca7",
+    "github_repo": null,
+    "created_at": "2025-07-01T04:27:56.703598+00:00",
+    "updated_at": "2025-07-01T04:27:56.703732+00:00"
+  }
+]

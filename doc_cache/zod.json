@@ -1,0 +1,20 @@
+{
+  "cached_at": 1751349583.856631,
+  "doc": {
+    "name": "Zod",
+    "version": "latest",
+    "install_commands": [],
+    "setup_commands": [],
+    "config_files": {
+      "lib/schemas.ts": "import { z } from \"zod\";\n\nexport const userSchema = z.object({\n  id: z.string(),\n  email: z.string().email(),\n  name: z.string().min(1),\n});\n\nexport type User = z.infer<typeof userSchema>;"
+    },
+    "scripts": {},
+    "dependencies": [
+      "zod"
+    ],
+    "dev_dependencies": [],
+    "environment_setup": [],
+    "documentation_url": "https://zod.dev/",
+    "last_updated": "2025-07-01 02:59:43"
+  }
+}

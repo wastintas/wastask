@@ -1,0 +1,35 @@
+{
+  "cached_at": 1751349583.280652,
+  "doc": {
+    "name": "Shadcn/ui",
+    "version": "latest",
+    "install_commands": [
+      "npx shadcn@latest init"
+    ],
+    "setup_commands": [
+      "npx shadcn@latest add button",
+      "npx shadcn@latest add input",
+      "npx shadcn@latest add card"
+    ],
+    "config_files": {
+      "components.json": "{\n  \"$schema\": \"https://ui.shadcn.com/schema.json\",\n  \"style\": \"default\",\n  \"rsc\": false,\n  \"tsx\": true,\n  \"tailwind\": {\n    \"config\": \"tailwind.config.js\",\n    \"css\": \"app/globals.css\",\n    \"baseColor\": \"slate\",\n    \"cssVariables\": true\n  },\n  \"aliases\": {\n    \"components\": \"~/components\",\n    \"utils\": \"~/lib/utils\"\n  }\n}",
+      "tailwind.config.js": "module.exports = {\n  content: [\"./app/**/*.{js,jsx,ts,tsx}\"],\n  theme: {\n    extend: {},\n  },\n  plugins: [require(\"tailwindcss-animate\")],\n}"
+    },
+    "scripts": {},
+    "dependencies": [
+      "class-variance-authority",
+      "clsx",
+      "tailwind-merge",
+      "@radix-ui/react-slot"
+    ],
+    "dev_dependencies": [
+      "tailwindcss",
+      "tailwindcss-animate",
+      "autoprefixer",
+      "postcss"
+    ],
+    "environment_setup": [],
+    "documentation_url": "https://ui.shadcn.com/docs/installation",
+    "last_updated": "2025-07-01 02:59:43"
+  }
+}

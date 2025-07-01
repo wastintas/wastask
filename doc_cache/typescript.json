@@ -1,0 +1,24 @@
+{
+  "cached_at": 1751349588.861705,
+  "doc": {
+    "name": "TypeScript",
+    "version": "5.0+",
+    "install_commands": [],
+    "setup_commands": [],
+    "config_files": {
+      "tsconfig.json": "{\n  \"include\": [\"**/*.ts\", \"**/*.tsx\"],\n  \"compilerOptions\": {\n    \"lib\": [\"DOM\", \"DOM.Iterable\", \"ES6\"],\n    \"allowJs\": true,\n    \"skipLibCheck\": true,\n    \"esModuleInterop\": true,\n    \"allowSyntheticDefaultImports\": true,\n    \"strict\": true,\n    \"forceConsistentCasingInFileNames\": true,\n    \"moduleResolution\": \"bundler\",\n    \"resolveJsonModule\": true,\n    \"isolatedModules\": true,\n    \"noEmit\": true,\n    \"jsx\": \"react-jsx\"\n  }\n}"
+    },
+    "scripts": {
+      "typecheck": "tsc --noEmit"
+    },
+    "dependencies": [],
+    "dev_dependencies": [
+      "typescript",
+      "@types/react",
+      "@types/react-dom"
+    ],
+    "environment_setup": [],
+    "documentation_url": "https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html",
+    "last_updated": "2025-07-01 02:59:48"
+  }
+}

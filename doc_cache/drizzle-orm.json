@@ -1,0 +1,33 @@
+{
+  "cached_at": 1751349584.920544,
+  "doc": {
+    "name": "Drizzle ORM",
+    "version": "latest",
+    "install_commands": [],
+    "setup_commands": [],
+    "config_files": {
+      "drizzle.config.ts": "import { defineConfig } from \"drizzle-kit\";\n\nexport default defineConfig({\n  dialect: \"postgresql\",\n  schema: \"./app/db/schema.ts\",\n  out: \"./drizzle\",\n  dbCredentials: {\n    url: process.env.DATABASE_URL!,\n  },\n});",
+      "app/db/schema.ts": "import { pgTable, text, timestamp, uuid } from \"drizzle-orm/pg-core\";\n\nexport const users = pgTable(\"users\", {\n  id: uuid(\"id\").defaultRandom().primaryKey(),\n  email: text(\"email\").notNull().unique(),\n  name: text(\"name\").notNull(),\n  createdAt: timestamp(\"created_at\").defaultNow(),\n});",
+      "app/db/index.ts": "import { drizzle } from \"drizzle-orm/postgres-js\";\nimport postgres from \"postgres\";\nimport * as schema from \"./schema\";\n\nconst client = postgres(process.env.DATABASE_URL!);\nexport const db = drizzle(client, { schema });"
+    },
+    "scripts": {
+      "db:generate": "drizzle-kit generate",
+      "db:migrate": "drizzle-kit migrate",
+      "db:studio": "drizzle-kit studio"
+    },
+    "dependencies": [
+      "drizzle-orm",
+      "postgres"
+    ],
+    "dev_dependencies": [
+      "drizzle-kit",
+      "@types/pg"
+    ],
+    "environment_setup": [
+      "# Create .env file with:",
+      "DATABASE_URL=postgresql://user:password@localhost:5432/dbname"
+    ],
+    "documentation_url": "https://orm.drizzle.team/docs/get-started-postgresql",
+    "last_updated": "2025-07-01 02:59:44"
+  }
+}
