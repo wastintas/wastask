@@ -345,5 +345,112 @@ def run_migrations():
     except Exception as e:
         console.print(f"[red]Migration error:[/red] {e}")
 
+# === Task Management Commands ===
+@cli.group()
+def task():
+    """Task management and expansion commands"""
+    pass
+
+@task.command("expand")
+@click.argument('task_id', type=int)
+def expand_task(task_id):
+    """Expand a task into subtasks"""
+    from task_expander import TaskExpander
+    
+    async def run_expansion():
+        expander = TaskExpander()
+        result = await expander.expand_task_by_id(task_id)
+        
+        if result["status"] == "success":
+            console.print(f"[green]✅ Task {task_id} expanded successfully![/green]")
+            console.print(f"Created {result['subtasks_created']} subtasks")
+            console.print(f"Subtask IDs: {', '.join(map(str, result['subtask_ids']))}")
+        elif result["status"] == "skipped":
+            console.print(f"[yellow]⏭️ {result['message']}[/yellow]")
+        else:
+            console.print(f"[red]❌ {result['message']}[/red]")
+    
+    asyncio.run(run_expansion())
+
+@task.command("expand-all")
+@click.argument('project_id', type=int)
+@click.option('--max-tasks', type=int, default=10, help='Maximum tasks to expand')
+def expand_all_tasks(project_id, max_tasks):
+    """Expand all expandable tasks in a project"""
+    from task_expander import TaskExpander
+    
+    async def run_expansion():
+        expander = TaskExpander()
+        result = await expander.expand_project_tasks(project_id, max_tasks)
+        
+        if result["status"] == "success":
+            console.print(f"[green]✅ Project {project_id} tasks expanded![/green]")
+            console.print(f"Expanded {result['tasks_expanded']} tasks")
+            
+            for task_result in result['results']:
+                console.print(f"  📋 {task_result['task_title']}: {task_result['subtasks_created']} subtasks")
+        
+        elif result["status"] == "complete":
+            console.print(f"[blue]ℹ️ {result['message']}[/blue]")
+        else:
+            console.print(f"[red]❌ Expansion failed[/red]")
+    
+    asyncio.run(run_expansion())
+
+@task.command("tree")
+@click.argument('project_id', type=int)
+def show_task_tree(project_id):
+    """Show task hierarchy tree for a project"""
+    async def show_tree():
+        async def get_tree(db):
+            # Get all tasks for project
+            query = """
+            SELECT id, title, parent_task_id, expansion_level, estimated_hours, status, is_expanded
+            FROM wastask_tasks 
+            WHERE project_id = $1 
+            ORDER BY parent_task_id NULLS FIRST, id
+            """
+            tasks = await db.pool.fetch(query, project_id)
+            
+            if not tasks:
+                console.print("No tasks found for this project")
+                return
+            
+            # Build tree structure
+            task_dict = {task['id']: dict(task) for task in tasks}
+            root_tasks = [task for task in tasks if task['parent_task_id'] is None]
+            
+            def print_task(task, level=0):
+                indent = "  " * level
+                status_emoji = {"todo": "⏳", "in_progress": "🚧", "completed": "✅", "blocked": "🚫"}.get(task['status'], "📋")
+                expanded_emoji = "📂" if task['is_expanded'] else "📄"
+                
+                console.print(f"{indent}{status_emoji} {expanded_emoji} {task['title']} ({task['estimated_hours']}h)")
+                
+                # Print children
+                children = [t for t in tasks if t['parent_task_id'] == task['id']]
+                for child in children:
+                    print_task(child, level + 1)
+            
+            console.print(f"\n🌳 Task Tree - Project {project_id}")
+            console.print("=" * 50)
+            
+            for root_task in root_tasks:
+                print_task(root_task)
+            
+            # Statistics
+            total_tasks = len(tasks)
+            expanded_tasks = len([t for t in tasks if t['is_expanded']])
+            subtasks = len([t for t in tasks if t['parent_task_id'] is not None])
+            
+            console.print(f"\n📊 Statistics:")
+            console.print(f"  Total tasks: {total_tasks}")
+            console.print(f"  Expanded tasks: {expanded_tasks}")
+            console.print(f"  Subtasks: {subtasks}")
+        
+        await connect_and_run(get_tree)
+    
+    asyncio.run(show_tree())
+
 if __name__ == '__main__':
     cli()
