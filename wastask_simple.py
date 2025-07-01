@@ -11,6 +11,7 @@ from datetime import datetime
 import re
 from typing import List, Dict, Any
 from doc_fetcher import fetch_tech_documentation
+from prd_enhancer import prd_enhancer
 
 def extract_basic_info(prd_content: str) -> Dict[str, str]:
     """Extrair informações básicas do PRD"""
@@ -376,6 +377,71 @@ def ask_clarification(question: str, options: List[str] = None) -> str:
     else:
         return input("Resposta: ").strip()
 
+def _display_prd_comparison(original: str, enhanced: str):
+    """Mostrar comparação entre PRD original e melhorado"""
+    
+    console.print("\n" + "="*80)
+    console.print("📋 PRD COMPARISON - BEFORE vs AFTER")
+    console.print("="*80)
+    
+    # Estatísticas
+    orig_words = len(original.split())
+    enhanced_words = len(enhanced.split())
+    orig_lines = len([line for line in original.split('\n') if line.strip()])
+    enhanced_lines = len([line for line in enhanced.split('\n') if line.strip()])
+    
+    console.print(f"\n📊 Statistics:")
+    console.print(f"   Words: {orig_words} → {enhanced_words} (+{enhanced_words - orig_words})")
+    console.print(f"   Lines: {orig_lines} → {enhanced_lines} (+{enhanced_lines - orig_lines})")
+    
+    # PRD Original
+    console.print(f"\n📄 ORIGINAL PRD:")
+    console.print("-" * 50)
+    print(original)
+    
+    console.print(f"\n✨ ENHANCED PRD:")
+    console.print("-" * 50)
+    print(enhanced)
+    console.print("-" * 50)
+
+def _save_prd_comparison(original: str, enhanced: str, project_name: str):
+    """Salvar comparação em arquivos"""
+    
+    safe_name = project_name.lower().replace(' ', '_').replace('/', '_')
+    
+    # Salvar PRD original
+    orig_file = f"{safe_name}_original.md"
+    with open(orig_file, 'w', encoding='utf-8') as f:
+        f.write(f"# {project_name} - Original PRD\n\n")
+        f.write(original)
+    
+    # Salvar PRD melhorado
+    enhanced_file = f"{safe_name}_enhanced.md"
+    with open(enhanced_file, 'w', encoding='utf-8') as f:
+        f.write(f"# {project_name} - Enhanced PRD\n\n")
+        f.write(enhanced)
+    
+    # Salvar comparação
+    comparison_file = f"{safe_name}_comparison.md"
+    with open(comparison_file, 'w', encoding='utf-8') as f:
+        f.write(f"# {project_name} - PRD Comparison\n\n")
+        f.write(f"## Original PRD ({len(original.split())} words)\n\n")
+        f.write("```markdown\n")
+        f.write(original)
+        f.write("\n```\n\n")
+        f.write(f"## Enhanced PRD ({len(enhanced.split())} words)\n\n")
+        f.write("```markdown\n")
+        f.write(enhanced)
+        f.write("\n```\n\n")
+        f.write(f"## Improvement Summary\n\n")
+        f.write(f"- **Words**: {len(original.split())} → {len(enhanced.split())}\n")
+        orig_lines = len(original.split('\n'))
+        enhanced_lines = len(enhanced.split('\n'))
+        f.write(f"- **Lines**: {orig_lines} → {enhanced_lines}\n")
+        f.write(f"- **Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+    
+    return orig_file, enhanced_file, comparison_file
+
 async def generate_setup_commands_with_docs(technologies: List[Dict], package_manager: str) -> Dict[str, Any]:
     """Gerar comandos de instalação baseados nas documentações reais"""
     
@@ -467,28 +533,66 @@ async def analyze_prd_file(prd_file: str, verbose: bool = False, interactive: bo
         print(f"❌ Error reading file: {e}")
         return {}
     
-    # 2. Extrair informações básicas
+    # 2. Melhorar PRD se necessário
+    print("🧠 Analyzing and enhancing PRD quality...")
+    enhancement = await prd_enhancer.enhance_prd(prd_content)
+    
+    if enhancement.quality_before < enhancement.quality_after:
+        print(f"   ✅ PRD enhanced: {enhancement.quality_before:.1f}/10 → {enhancement.quality_after:.1f}/10")
+        prd_content = enhancement.enhanced_prd  # Usar PRD melhorado
+        
+        if interactive and enhancement.clarification_questions:
+            print(f"\n❓ Questions to clarify requirements:")
+            for i, question in enumerate(enhancement.clarification_questions[:5], 1):
+                print(f"   {i}. {question}")
+            
+            if enhancement.suggested_features:
+                print(f"\n💡 Suggested additional features:")
+                for feature in enhancement.suggested_features[:3]:
+                    print(f"   • {feature}")
+            
+            should_continue = ask_clarification(
+                "Continue with enhanced PRD?", 
+                ["Yes, use enhanced PRD", "No, use original PRD", "Show PRD comparison"]
+            )
+            
+            if should_continue.startswith("Show"):
+                _display_prd_comparison(enhancement.original_prd, enhancement.enhanced_prd)
+                should_continue = ask_clarification(
+                    "After seeing comparison, which PRD to use?",
+                    ["Use enhanced PRD", "Use original PRD"]
+                )
+            
+            if should_continue.startswith("No") or should_continue.startswith("Use original"):
+                prd_content = enhancement.original_prd
+                print("   📋 Using original PRD")
+            else:
+                print("   ✨ Using AI-enhanced PRD")
+    else:
+        print(f"   ✅ PRD quality is good ({enhancement.quality_before:.1f}/10)")
+    
+    # 3. Extrair informações básicas
     print("🔍 Extracting project information...")
     basic_info = extract_basic_info(prd_content)
     print(f"   • Project: {basic_info['name']}")
     
-    # 3. Identificar features
+    # 4. Identificar features
     print("🎯 Identifying features...")
     features = identify_features(prd_content)
     print(f"   • Found {len(features)} features")
     
-    # 4. Analisar complexidade
+    # 5. Analisar complexidade
     print("📊 Analyzing complexity...")
     complexity_analysis = analyze_complexity(prd_content, features)
     print(f"   • Complexity score: {complexity_analysis['score']:.1f}/10")
     print(f"   • Timeline: {complexity_analysis['timeline']}")
     
-    # 5. Recomendar tecnologias
+    # 6. Recomendar tecnologias
     print("🛠️ Recommending technologies...")
     tech_recommendations = recommend_technologies(prd_content, features)
     print(f"   • {len(tech_recommendations)} technology recommendations")
     
-    # 5.1 Clarificações interativas (se habilitado)
+    # 6.1 Clarificações interativas (se habilitado)
     if interactive:
         # Verificar se tem full-stack + backend
         has_fullstack = any(t["category"] == "fullstack_framework" for t in tech_recommendations)
@@ -522,18 +626,28 @@ async def analyze_prd_file(prd_file: str, verbose: bool = False, interactive: bo
     else:
         detected_pm = detect_package_manager(prd_content)
     
-    # 5.2 Gerar comandos de setup com documentações reais
+    # 6.2 Gerar comandos de setup com documentações reais
     print("⚙️ Generating setup commands from official documentation...")
     setup_commands = await generate_setup_commands_with_docs(tech_recommendations, detected_pm)
     
-    # 6. Gerar tarefas
+    # 7. Gerar tarefas
     print("📝 Generating tasks...")
     tasks = generate_tasks(basic_info['name'], features, complexity_analysis)
     print(f"   • Generated {len(tasks)} tasks")
     
-    # 7. Compilar resultados
+    # 8. Compilar resultados
     results = {
         'project': basic_info,
+        'prd_enhancement': {
+            'original_quality': enhancement.quality_before,
+            'enhanced_quality': enhancement.quality_after,
+            'was_enhanced': enhancement.quality_before < enhancement.quality_after,
+            'original_prd': enhancement.original_prd,
+            'enhanced_prd': enhancement.enhanced_prd,
+            'clarification_questions': enhancement.clarification_questions,
+            'suggested_features': enhancement.suggested_features,
+            'technology_hints': enhancement.technology_hints
+        },
         'features': features,
         'complexity': complexity_analysis,
         'technologies': tech_recommendations,
@@ -570,6 +684,15 @@ def display_results(results: Dict[str, Any], verbose: bool = False):
     
     print(f"🎯 Project: {project['name']}")
     print(f"📝 Description: {project['description']}")
+    
+    # PRD Enhancement info
+    if 'prd_enhancement' in results:
+        enhancement = results['prd_enhancement']
+        if enhancement['was_enhanced']:
+            print(f"✨ PRD Enhanced: {enhancement['original_quality']:.1f}/10 → {enhancement['enhanced_quality']:.1f}/10")
+        else:
+            print(f"📋 PRD Quality: {enhancement['original_quality']:.1f}/10 (good)")
+    
     print(f"📊 Complexity: {complexity['score']:.1f}/10")
     print(f"⏱️ Timeline: {complexity['timeline']}")
     print(f"📈 Total Hours: {stats['total_hours']}h ({stats['total_hours']//40} weeks)")
@@ -649,13 +772,14 @@ def display_results(results: Dict[str, Any], verbose: bool = False):
 async def main():
     """Função principal"""
     if len(sys.argv) < 2:
-        print("Usage: python wastask_simple.py <prd_file> [--verbose] [--json] [--no-interactive]")
+        print("Usage: python wastask_simple.py <prd_file> [--verbose] [--json] [--no-interactive] [--save-prd-comparison]")
         sys.exit(1)
     
     prd_file = sys.argv[1]
     verbose = "--verbose" in sys.argv or "-v" in sys.argv
     json_output = "--json" in sys.argv
     interactive = "--no-interactive" not in sys.argv
+    save_comparison = "--save-prd-comparison" in sys.argv
     
     if not Path(prd_file).exists():
         print(f"❌ File not found: {prd_file}")
@@ -668,6 +792,20 @@ async def main():
         if not results:
             print("❌ Analysis failed")
             sys.exit(1)
+        
+        # Salvar comparação PRD se solicitado
+        if save_comparison and 'prd_enhancement' in results:
+            enhancement = results['prd_enhancement']
+            if enhancement['was_enhanced']:
+                orig_file, enhanced_file, comparison_file = _save_prd_comparison(
+                    enhancement['original_prd'], 
+                    enhancement['enhanced_prd'], 
+                    results['project']['name']
+                )
+                print(f"\n📄 PRD comparison saved:")
+                print(f"   • Original: {orig_file}")
+                print(f"   • Enhanced: {enhanced_file}")
+                print(f"   • Comparison: {comparison_file}")
         
         # Output
         if json_output:

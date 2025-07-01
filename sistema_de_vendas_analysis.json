@@ -1,0 +1,363 @@
+{
+  "project": {
+    "name": "Sistema de Vendas",
+    "description": "Project extracted from PRD"
+  },
+  "prd_enhancement": {
+    "original_quality": 2.8571428571428568,
+    "enhanced_quality": 7.142857142857143,
+    "was_enhanced": true,
+    "original_prd": "# Sistema de Vendas\n\nPreciso de um sistema para gerenciar vendas da empresa.\n\n## O que precisa ter:\n- Cadastro de clientes\n- Cadastro de produtos  \n- Fazer vendas\n- Ver relatórios\n\nDeve ser web e fácil de usar.\n\nBudget: R$ 20.000\nPrazo: 3 meses",
+    "enhanced_prd": "# Sistema de Vendas\n\n## 1. Visão do Projeto\n\nDesenvolver um sistema eficiente que atenda às necessidades identificadas no documento original, proporcionando uma solução robusta e escalável.\n\n## 2. Objetivos\n\n- Implementar todas as funcionalidades identificadas no escopo\n- Garantir alta qualidade e performance do sistema\n- Proporcionar experiência de usuário intuitiva\n- Estabelecer base sólida para evoluções futuras\n\n## 3. Funcionalidades Principais\n\n### 1. Cadastro de clientes\nImplementação completa de cadastro de clientes com todas as funcionalidades necessárias.\n\n### 2. Cadastro de produtos\nImplementação completa de cadastro de produtos com todas as funcionalidades necessárias.\n\n### 3. Fazer vendas\nImplementação completa de fazer vendas com todas as funcionalidades necessárias.\n\n### 4. Ver relatórios\nImplementação completa de ver relatórios com todas as funcionalidades necessárias.\n\n\n\n## 4. Requisitos Técnicos\n\n- **Arquitetura**: Aplicação web moderna e responsiva\n- **Performance**: Tempo de resposta < 2 segundos\n- **Escalabilidade**: Suporte a crescimento de usuários\n- **Segurança**: Implementação de boas práticas de segurança\n- **Manutenibilidade**: Código limpo e bem documentado\n\n## 5. User Stories\n\n**Como um usuário do sistema**, eu quero acessar as funcionalidades principais para que eu possa realizar minhas tarefas de forma eficiente.\n\n**Como um administrador**, eu quero gerenciar o sistema para que eu possa manter sua operação adequada.\n\n**Como um usuário final**, eu quero uma interface intuitiva para que eu possa usar o sistema sem dificuldades.\n\n## 6. Critérios de Aceitação\n\n- Todas as funcionalidades especificadas devem estar implementadas\n- Sistema deve passar em todos os testes de qualidade\n- Interface deve ser responsiva em diferentes dispositivos\n- Performance deve atender aos requisitos especificados\n- Segurança deve estar de acordo com as melhores práticas\n\n## 7. Requisitos Não-Funcionais\n\n### Performance\n- Tempo de carregamento inicial: < 3 segundos\n- Tempo de resposta das operações: < 2 segundos\n\n### Segurança\n- Autenticação segura\n- Proteção contra ataques comuns (XSS, CSRF, SQL Injection)\n- Criptografia de dados sensíveis\n\n### Escalabilidade\n- Suporte a aumento de usuários e dados\n- Arquitetura preparada para crescimento\n\n### Usabilidade\n- Interface intuitiva e responsiva\n- Compatibilidade com navegadores modernos\n- Acessibilidade (WCAG 2.1)\n\n---\n\n*PRD melhorado automaticamente pelo WasTask PRD Enhancer*\n",
+    "clarification_questions": [
+      "Qual o número esperado de usuários concurrent?",
+      "Precisa de aplicativo mobile ou apenas web?",
+      "Quais integrações com sistemas externos são necessárias?",
+      "Qual o orçamento disponível para desenvolvimento?",
+      "Existe prazo específico para entrega?",
+      "Quais são os requisitos de segurança e compliance?",
+      "Precisa suportar múltiplos idiomas?",
+      "Quais métodos de pagamento devem ser suportados?",
+      "Precisa integrar com ERP existente?",
+      "Qual o volume esperado de transações por dia?"
+    ],
+    "suggested_features": [
+      "📈 Relatórios de vendas",
+      "💰 Integração com pagamentos",
+      "📱 Interface mobile responsiva"
+    ],
+    "technology_hints": [
+      "Frontend: React + TypeScript - Interface moderna e tipada",
+      "Backend: Node.js + Express - API REST eficiente",
+      "Database: PostgreSQL - Dados relacionais confiáveis"
+    ]
+  },
+  "features": [],
+  "complexity": {
+    "score": 3.0,
+    "timeline": "4-6 weeks",
+    "risks": [],
+    "total_effort": 0
+  },
+  "technologies": [
+    {
+      "category": "frontend_framework",
+      "technology": "React",
+      "version": "18.3.0",
+      "reason": "Modern component-based architecture",
+      "confidence": 0.7
+    },
+    {
+      "category": "database",
+      "technology": "PostgreSQL",
+      "version": "16.0",
+      "reason": "Reliable relational database",
+      "confidence": 0.8
+    }
+  ],
+  "setup_commands": {
+    "setup": [
+      "npm install react"
+    ],
+    "install": [
+      "pnpm add react"
+    ],
+    "scripts": {},
+    "environment": [
+      "# Using Docker (recommended):",
+      "docker run -d --name postgres \\",
+      "  -e POSTGRES_USER=myuser \\",
+      "  -e POSTGRES_PASSWORD=mypassword \\",
+      "  -e POSTGRES_DB=mydb \\",
+      "  -p 5432:5432 \\",
+      "  postgres:16-alpine",
+      "",
+      "# Alternative: Local installation",
+      "# macOS: brew install postgresql@16",
+      "# Ubuntu: sudo apt install postgresql-16"
+    ],
+    "config_files": {},
+    "documentation_sources": {
+      "React": "",
+      "PostgreSQL": "https://www.postgresql.org/docs/current/installation.html"
+    }
+  },
+  "package_manager": "pnpm",
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Project foundation and setup",
+      "description": "Implement project foundation and setup for Sistema de Vendas",
+      "priority": "high",
+      "estimated_hours": 4,
+      "complexity": "low",
+      "category": "setup",
+      "tags": [
+        "setup",
+        "low"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 2,
+      "title": "Development environment configuration",
+      "description": "Implement development environment configuration for Sistema de Vendas",
+      "priority": "high",
+      "estimated_hours": 4,
+      "complexity": "low",
+      "category": "setup",
+      "tags": [
+        "setup",
+        "low"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 3,
+      "title": "CI/CD pipeline setup",
+      "description": "Implement ci/cd pipeline setup for Sistema de Vendas",
+      "priority": "high",
+      "estimated_hours": 4,
+      "complexity": "low",
+      "category": "setup",
+      "tags": [
+        "setup",
+        "low"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 4,
+      "title": "UI/UX design and layout",
+      "description": "Implement ui/ux design and layout for Sistema de Vendas",
+      "priority": "medium",
+      "estimated_hours": 8,
+      "complexity": "low",
+      "category": "frontend",
+      "tags": [
+        "frontend",
+        "low"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 5,
+      "title": "Component library creation",
+      "description": "Implement component library creation for Sistema de Vendas",
+      "priority": "medium",
+      "estimated_hours": 8,
+      "complexity": "medium",
+      "category": "frontend",
+      "tags": [
+        "frontend",
+        "medium"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 6,
+      "title": "Responsive design implementation",
+      "description": "Implement responsive design implementation for Sistema de Vendas",
+      "priority": "medium",
+      "estimated_hours": 12,
+      "complexity": "medium",
+      "category": "frontend",
+      "tags": [
+        "frontend",
+        "medium"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 7,
+      "title": "Frontend routing setup",
+      "description": "Implement frontend routing setup for Sistema de Vendas",
+      "priority": "medium",
+      "estimated_hours": 8,
+      "complexity": "low",
+      "category": "frontend",
+      "tags": [
+        "frontend",
+        "low"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 8,
+      "title": "API design and documentation",
+      "description": "Implement api design and documentation for Sistema de Vendas",
+      "priority": "high",
+      "estimated_hours": 8,
+      "complexity": "medium",
+      "category": "backend",
+      "tags": [
+        "backend",
+        "medium"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 9,
+      "title": "Database schema design",
+      "description": "Implement database schema design for Sistema de Vendas",
+      "priority": "high",
+      "estimated_hours": 8,
+      "complexity": "medium",
+      "category": "backend",
+      "tags": [
+        "backend",
+        "medium"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 10,
+      "title": "Authentication system",
+      "description": "Implement authentication system for Sistema de Vendas",
+      "priority": "high",
+      "estimated_hours": 8,
+      "complexity": "high",
+      "category": "backend",
+      "tags": [
+        "backend",
+        "high"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 11,
+      "title": "API endpoints implementation",
+      "description": "Implement api endpoints implementation for Sistema de Vendas",
+      "priority": "high",
+      "estimated_hours": 12,
+      "complexity": "medium",
+      "category": "backend",
+      "tags": [
+        "backend",
+        "medium"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 12,
+      "title": "Unit tests implementation",
+      "description": "Implement unit tests implementation for Sistema de Vendas",
+      "priority": "low",
+      "estimated_hours": 12,
+      "complexity": "medium",
+      "category": "testing",
+      "tags": [
+        "testing",
+        "medium"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 13,
+      "title": "Integration tests setup",
+      "description": "Implement integration tests setup for Sistema de Vendas",
+      "priority": "low",
+      "estimated_hours": 8,
+      "complexity": "low",
+      "category": "testing",
+      "tags": [
+        "testing",
+        "low"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 14,
+      "title": "E2E testing framework",
+      "description": "Implement e2e testing framework for Sistema de Vendas",
+      "priority": "low",
+      "estimated_hours": 6,
+      "complexity": "medium",
+      "category": "testing",
+      "tags": [
+        "testing",
+        "medium"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 15,
+      "title": "Performance testing",
+      "description": "Implement performance testing for Sistema de Vendas",
+      "priority": "low",
+      "estimated_hours": 6,
+      "complexity": "medium",
+      "category": "testing",
+      "tags": [
+        "testing",
+        "medium"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 16,
+      "title": "Production deployment setup",
+      "description": "Implement production deployment setup for Sistema de Vendas",
+      "priority": "low",
+      "estimated_hours": 8,
+      "complexity": "low",
+      "category": "deployment",
+      "tags": [
+        "deployment",
+        "low"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 17,
+      "title": "Monitoring and logging",
+      "description": "Implement monitoring and logging for Sistema de Vendas",
+      "priority": "low",
+      "estimated_hours": 8,
+      "complexity": "medium",
+      "category": "deployment",
+      "tags": [
+        "deployment",
+        "medium"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 18,
+      "title": "Security audit",
+      "description": "Implement security audit for Sistema de Vendas",
+      "priority": "low",
+      "estimated_hours": 8,
+      "complexity": "medium",
+      "category": "deployment",
+      "tags": [
+        "deployment",
+        "medium"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": 19,
+      "title": "Documentation finalization",
+      "description": "Implement documentation finalization for Sistema de Vendas",
+      "priority": "low",
+      "estimated_hours": 8,
+      "complexity": "medium",
+      "category": "deployment",
+      "tags": [
+        "deployment",
+        "medium"
+      ],
+      "dependencies": []
+    }
+  ],
+  "generated_at": "2025-07-01T03:18:54.950616",
+  "statistics": {
+    "total_features": 0,
+    "total_tasks": 19,
+    "total_hours": 148,
+    "high_priority_tasks": 7,
+    "medium_priority_tasks": 4,
+    "low_priority_tasks": 8
+  }
+}
