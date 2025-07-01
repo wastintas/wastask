@@ -1,11 +1,12 @@
 """
 Simplified project management endpoints that work with current database structure
 """
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, HTTPException, status, Query, Depends
 from typing import List, Optional
 from datetime import datetime
 
 from database_manager import get_db_pool
+from api.auth import get_current_user, get_current_admin_user
 
 router = APIRouter()
 
@@ -80,7 +81,11 @@ async def get_project(project_id: int):
 
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
-async def create_project(name: str, description: Optional[str] = None):
+async def create_project(
+    name: str, 
+    description: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
     """Create a new project."""
     pool = await get_db_pool()
     
