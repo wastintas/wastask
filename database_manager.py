@@ -347,6 +347,33 @@ async def connect_and_run(operation, *args, **kwargs):
         await db.close()
 
 
+# Singleton instance
+_db_pool = None
+
+async def init_database_pool(connection_string: str = None):
+    """Initialize the database pool singleton"""
+    global _db_pool
+    if _db_pool is None:
+        connection_string = connection_string or "postgresql://wastask:password@localhost:5433/wastask"
+        _db_pool = await asyncpg.create_pool(connection_string)
+        print("✅ Database connection pool created")
+    return _db_pool
+
+async def get_db_pool():
+    """Get the database pool instance"""
+    global _db_pool
+    if _db_pool is None:
+        await init_database_pool()
+    return _db_pool
+
+async def close_database_pool():
+    """Close the database pool"""
+    global _db_pool
+    if _db_pool:
+        await _db_pool.close()
+        _db_pool = None
+        print("✅ Database connection pool closed")
+
 # Exemplo de uso
 async def example_usage():
     """Exemplo de como usar o database manager"""
