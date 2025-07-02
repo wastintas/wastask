@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  wastask-api:
+    image: python:3.11-slim
+    environment:
+      DATABASE_URL: postgresql://wastask:WastasksDB2024!@postgres:5432/wastask
+      REDIS_URL: redis://:WastasksRedis2024!@redis:6379/0
+      SECRET_KEY: WastasksJWT2024SuperSecretKey32CharsMin!
+      DEBUG: "false"
+      HOST: 0.0.0.0
+      PORT: 8000
+      BASE_URL: https://wastasks.wastintas.com.br
+    volumes:
+      - wastask_code:/app
+      - wastask_uploads:/app/uploads
+      - wastask_logs:/app/logs
+    working_dir: /app
+    command: >
+      bash -c "
+        echo '🚀 Baixando Wastask do GitHub...' &&
+        apt-get update -qq && apt-get install -y -qq git curl netcat-traditional &&
+        rm -rf /tmp/repo &&
+        git clone https://github.com/wastintas/wastask.git /tmp/repo &&
+        cp -r /tmp/repo/* /app/ 2>/dev/null || true &&
+        echo '📦 Instalando dependências Python...' &&
+        pip install --no-cache-dir fastapi uvicorn[standard] python-multipart asyncpg 'databases[postgresql]' httpx rich click aiofiles pydantic pydantic-settings beautifulsoup4 python-dotenv psutil sqlalchemy psycopg2-binary aiohttp 'python-jose[cryptography]' 'passlib[bcrypt]' email-validator litellm openai anthropic PyJWT &&
+        echo '🔍 Testando conectividade...' &&
+        nc -z postgres 5432 || (echo 'PostgreSQL não acessível' && exit 1) &&
+        nc -z redis 6379 || (echo 'Redis não acessível' && exit 1) &&
+        echo '✅ Conectividade OK! Iniciando Wastask completo...' &&
+        python -c 'from api.main import app; import uvicorn; uvicorn.run(app, host=\"0.0.0.0\", port=8000)'
+      "
+    networks:
+      - WasNet
+      - wastask-internal
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    deploy:
+      restart_policy:
+        condition: any
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=WasNet"
+        - "traefik.http.routers.wastask.rule=Host(`wastasks.wastintas.com.br`)"
+        - "traefik.http.routers.wastask.entrypoints=websecure"
+        - "traefik.http.routers.wastask.tls=true"
+        - "traefik.http.routers.wastask.tls.certresolver=letsencrypt"
+        - "traefik.http.services.wastask.loadbalancer.server.port=8000"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wastask
+      POSTGRES_PASSWORD: WastasksDB2024!
+      POSTGRES_DB: wastask
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass WastasksRedis2024!
+    volumes:
+      - redis_data:/data
+    networks:
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+
+volumes:
+  wastask_code:
+  postgres_data:
+  redis_data:
+  wastask_uploads:
+  wastask_logs:
+
+networks:
+  WasNet:
+    external: true
+  wastask-internal:
+    driver: overlay
