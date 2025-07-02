@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  wastask-api:
+    image: python:3.11-slim
+    environment:
+      DATABASE_URL: postgresql://wastask:${POSTGRES_PASSWORD:-WastasksDB2024!}@postgres:5432/wastask
+      REDIS_URL: redis://:${REDIS_PASSWORD:-WastasksRedis2024!}@redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:-WastasksJWT2024SuperSecretKey32CharsMin!}
+      DEBUG: "false"
+      HOST: 0.0.0.0
+      PORT: 8000
+      BASE_URL: https://${WASTASK_DOMAIN:-wastasks.wastintas.com.br}
+      GITHUB_REPO: ${GITHUB_REPO:-https://github.com/wastintas/wastask.git}
+      GITHUB_BRANCH: ${GITHUB_BRANCH:-main}
+    volumes:
+      - wastask_code:/app
+      - wastask_uploads:/app/uploads
+      - wastask_logs:/app/logs
+    working_dir: /app
+    command: >
+      bash -c "
+        echo '🚀 Cloning Wastask from GitHub...' &&
+        apt-get update -qq && apt-get install -y -qq git curl &&
+        rm -rf /app/* &&
+        git clone \$${GITHUB_REPO} /tmp/wastask &&
+        cp -r /tmp/wastask/* /app/ &&
+        rm -rf /tmp/wastask &&
+        echo '📦 Installing dependencies...' &&
+        pip install --no-cache-dir uv &&
+        uv sync &&
+        echo '✅ Starting Wastask API...' &&
+        uv run uvicorn api.main:app --host 0.0.0.0 --port 8000
+      "
+    networks:
+      - WasNet
+      - wastask-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      restart_policy:
+        condition: any
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=WasNet"
+        - "traefik.http.routers.wastask.rule=Host(`${WASTASK_DOMAIN:-wastasks.wastintas.com.br}`)"
+        - "traefik.http.routers.wastask.entrypoints=websecure"
+        - "traefik.http.routers.wastask.tls=true"
+        - "traefik.http.routers.wastask.tls.certresolver=letsencrypt"
+        - "traefik.http.services.wastask.loadbalancer.server.port=8000"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wastask
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-WastasksDB2024!}
+      POSTGRES_DB: wastask
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-WastasksRedis2024!}
+    volumes:
+      - redis_data:/data
+    networks:
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+
+volumes:
+  wastask_code:
+  postgres_data:
+  redis_data:
+  wastask_uploads:
+  wastask_logs:
+
+networks:
+  WasNet:
+    external: true
+  wastask-internal:
+    driver: overlay
