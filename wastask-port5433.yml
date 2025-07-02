@@ -39,7 +39,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=WasNet"
-        - "traefik.http.routers.wastask.rule=Host(\`wastasks.wastintas.com.br\`)"
+        - "traefik.http.routers.wastask.rule=Host(`wastasks.wastintas.com.br`)"
         - "traefik.http.routers.wastask.entrypoints=websecure"
         - "traefik.http.routers.wastask.tls=true"
         - "traefik.http.routers.wastask.tls.certresolver=letsencrypt"
