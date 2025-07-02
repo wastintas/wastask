@@ -24,7 +24,7 @@ services:
         git clone https://github.com/wastintas/wastask.git /tmp/repo &&
         cp -r /tmp/repo/* /app/ 2>/dev/null || true &&
         echo '📦 Instalando dependências Python...' &&
-        pip install --no-cache-dir fastapi uvicorn python-multipart asyncpg databases[postgresql] httpx rich click aiofiles pydantic beautifulsoup4 python-dotenv psutil sqlalchemy alembic bcrypt python-jose[cryptography] passlib[bcrypt] &&
+        pip install --no-cache-dir fastapi uvicorn[standard] python-multipart asyncpg 'databases[postgresql]' httpx rich click aiofiles pydantic pydantic-settings beautifulsoup4 python-dotenv psutil sqlalchemy psycopg2-binary aiohttp 'python-jose[cryptography]' 'passlib[bcrypt]' email-validator litellm openai anthropic PyJWT &&
         echo '✅ Iniciando Wastask API...' &&
         python -c 'from api.main import app; import uvicorn; uvicorn.run(app, host=\"0.0.0.0\", port=8000)'
       "
