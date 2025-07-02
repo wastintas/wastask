@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wastask
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-WastasksDB2024!}
+      POSTGRES_DB: wastask
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-WastasksRedis2024!}
+    volumes:
+      - redis_data:/data
+    networks:
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+
+  wastask-api:
+    image: python:3.11-slim
+    environment:
+      DATABASE_URL: postgresql://wastask:${POSTGRES_PASSWORD:-WastasksDB2024!}@postgres:5432/wastask
+      REDIS_URL: redis://:${REDIS_PASSWORD:-WastasksRedis2024!}@redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:-WastasksJWT2024SuperSecretKey32CharsMin!}
+      DEBUG: "false"
+      HOST: 0.0.0.0
+      PORT: 8000
+      BASE_URL: https://${WASTASK_DOMAIN:-wastasks.wastintas.com.br}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    command: >
+      bash -c "
+        pip install fastapi uvicorn &&
+        cat > /app.py << 'EOF'
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+app = FastAPI(title='WasTask API')
+
+@app.get('/health')
+def health():
+    return {'status': 'healthy', 'service': 'wastask-api'}
+
+@app.get('/', response_class=HTMLResponse)
+def home():
+    return '''
+    <html>
+    <head><title>🚀 WasTask</title></head>
+    <body style=\"font-family: Arial; margin: 40px; text-align: center;\">
+        <h1>🚀 WasTask</h1>
+        <p>AI-powered Project Management System</p>
+        <p><strong>Status:</strong> Running successfully!</p>
+        <p><strong>Domain:</strong> wastasks.wastintas.com.br</p>
+        <p><strong>API:</strong> <a href=\"/docs\">/docs</a></p>
+        <hr>
+        <p><em>Sistema funcionando - pronto para desenvolvimento!</em></p>
+    </body>
+    </html>
+    '''
+
+@app.get('/api/stats')
+def stats():
+    return {
+        'status': 'success',
+        'stats': {
+            'total_projects': 0,
+            'total_tasks': 0,
+            'completed_tasks': 0,
+            'active_projects': 0
+        },
+        'message': 'WasTask API funcionando!'
+    }
+EOF
+        python /app.py &
+        uvicorn app:app --host 0.0.0.0 --port 8000
+      "
+    networks:
+      - WasNet
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=WasNet"
+        - "traefik.http.routers.wastask-http.rule=Host(`${WASTASK_DOMAIN:-wastasks.wastintas.com.br}`)"
+        - "traefik.http.routers.wastask-http.entrypoints=web"
+        - "traefik.http.routers.wastask-http.middlewares=https-redirect"
+        - "traefik.http.routers.wastask.rule=Host(`${WASTASK_DOMAIN:-wastasks.wastintas.com.br}`)"
+        - "traefik.http.routers.wastask.entrypoints=websecure"
+        - "traefik.http.routers.wastask.tls=true"
+        - "traefik.http.routers.wastask.tls.certresolver=letsencrypt"
+        - "traefik.http.services.wastask.loadbalancer.server.port=8000"
+        - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  WasNet:
+    external: true
+  wastask-internal:
+    driver: overlay

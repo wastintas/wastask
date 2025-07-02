@@ -1,0 +1,40 @@
+# WasTask Docker Image
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+RUN pip install --no-cache-dir uv
+
+# Set working directory
+WORKDIR /app
+
+# Copy WasTask code
+COPY . /app/
+
+# Install Python dependencies
+RUN uv pip install --system -r requirements.txt
+
+# Create necessary directories
+RUN mkdir -p /app/uploads /app/logs
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Default command
+CMD ["python", "-c", "\
+import subprocess; \
+import time; \
+print('🔧 Setting up database...'); \
+subprocess.run(['python', 'wastask.py', 'db', 'setup'], check=False); \
+print('✅ Starting WasTask API...'); \
+subprocess.run(['uvicorn', 'webapp:app', '--host', '0.0.0.0', '--port', '8000'])"]

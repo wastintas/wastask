@@ -133,7 +133,7 @@ Desenvolver uma plataforma moderna e segura que permita aos usuários configurar
 - **Validation**: Zod for schema validation
 - **Routing**: Remix Flat Routes pattern
 - **Styling**: Tailwind CSS (via Shadcn/ui)
-- **State Management**: React 18 built-in hooks + Context
+- **State Management**: React 19 built-in hooks + Context
 - **HTTP Client**: Fetch API with custom hooks
 
 #### 4.1.2 Backend & Database

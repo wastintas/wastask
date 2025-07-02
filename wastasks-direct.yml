@@ -1,0 +1,148 @@
+version: '3.8'
+
+# Stack direto para wastasks.wastintas.com.br
+# ⚠️ ATENÇÃO: Mude as senhas antes do deploy!
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: wastask-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wastask
+      POSTGRES_PASSWORD: WastasksPostgres2024!  # ⚠️ MUDE ESTA SENHA!
+      POSTGRES_DB: wastask
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wastask-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wastask -d wastask"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: wastask-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass WastasksRedis2024!  # ⚠️ MUDE ESTA SENHA!
+    volumes:
+      - redis_data:/data
+    networks:
+      - wastask-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "WastasksRedis2024!", "ping"]  # ⚠️ MUDE ESTA SENHA!
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  wastask-api:
+    image: python:3.11-slim
+    container_name: wastask-api
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      # Database
+      DATABASE_URL: postgresql://wastask:WastasksPostgres2024!@postgres:5432/wastask  # ⚠️ MUDE ESTA SENHA!
+      REDIS_URL: redis://:WastasksRedis2024!@redis:6379/0  # ⚠️ MUDE ESTA SENHA!
+      
+      # Security
+      SECRET_KEY: WastasksJWT2024SecretKey32CharsMinimum!  # ⚠️ MUDE ESTA CHAVE!
+      
+      # Application
+      DEBUG: "false"
+      LOG_LEVEL: INFO
+      HOST: 0.0.0.0
+      PORT: 8000
+      
+      # Traefik URLs
+      BASE_URL: https://wastasks.wastintas.com.br
+      
+      # LLM APIs - CONFIGURE PELO MENOS UMA!
+      # ANTHROPIC_API_KEY: sk-ant-sua-key-aqui
+      # OPENAI_API_KEY: sk-sua-key-openai-aqui
+      # GOOGLE_API_KEY: AIza-sua-key-google-aqui
+      
+      # Cost Management
+      COST_OPTIMIZATION_ENABLED: "true"
+      MAX_DAILY_COST_USD: 25.0
+      
+      # Rate Limiting
+      RATE_LIMIT_REQUESTS: 50
+      RATE_LIMIT_WINDOW: 60
+    volumes:
+      - ./wastask:/app
+      - wastask_uploads:/app/uploads
+      - wastask_logs:/app/logs
+    working_dir: /app
+    command: >
+      bash -c "
+        echo '🚀 Installing WasTask dependencies...' &&
+        apt-get update && apt-get install -y curl git &&
+        pip install --no-cache-dir uv &&
+        uv pip install --system -r requirements.txt &&
+        echo '🔧 Setting up database...' &&
+        python wastask.py db setup || echo 'Database already initialized' &&
+        echo '✅ Starting WasTask API...' &&
+        uvicorn webapp:app --host 0.0.0.0 --port 8000
+      "
+    networks:
+      - WasNet
+      - wastask-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      # Traefik configuration
+      - "traefik.enable=true"
+      - "traefik.docker.network=WasNet"
+      
+      # HTTP -> HTTPS redirect
+      - "traefik.http.routers.wastask-http.rule=Host(`wastasks.wastintas.com.br`)"
+      - "traefik.http.routers.wastask-http.entrypoints=web"
+      - "traefik.http.routers.wastask-http.middlewares=https-redirect"
+      
+      # HTTPS
+      - "traefik.http.routers.wastask.rule=Host(`wastasks.wastintas.com.br`)"
+      - "traefik.http.routers.wastask.entrypoints=websecure"
+      - "traefik.http.routers.wastask.tls=true"
+      - "traefik.http.routers.wastask.tls.certresolver=letsencrypt"
+      
+      # Service
+      - "traefik.http.services.wastask.loadbalancer.server.port=8000"
+      
+      # Middlewares
+      - "traefik.http.routers.wastask.middlewares=wastask-compress,wastask-rate-limit"
+      
+      # Rate limiting
+      - "traefik.http.middlewares.wastask-rate-limit.ratelimit.average=100"
+      - "traefik.http.middlewares.wastask-rate-limit.ratelimit.burst=50"
+      
+      # Compression
+      - "traefik.http.middlewares.wastask-compress.compress=true"
+      
+      # HTTPS redirect
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  wastask_uploads:
+    driver: local
+  wastask_logs:
+    driver: local
+
+networks:
+  WasNet:
+    external: true
+  wastask-internal:
+    driver: bridge
+    internal: true

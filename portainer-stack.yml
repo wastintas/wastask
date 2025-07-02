@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: wastask-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wastask
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wastask123!@#}
+      POSTGRES_DB: wastask
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - wastask-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wastask -d wastask"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    labels:
+      - "com.docker.compose.project=wastask"
+
+  wastask-api:
+    image: python:3.11-slim
+    container_name: wastask-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database
+      DATABASE_URL: postgresql://wastask:${POSTGRES_PASSWORD:-wastask123!@#}@postgres:5432/wastask
+      
+      # Security
+      SECRET_KEY: ${SECRET_KEY:-your-super-secret-key-change-in-production}
+      
+      # Application
+      DEBUG: false
+      LOG_LEVEL: INFO
+      HOST: 0.0.0.0
+      PORT: 8000
+      
+      # LLM APIs (configure conforme necessário)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      
+      # Cost Management
+      COST_OPTIMIZATION_ENABLED: true
+      MAX_DAILY_COST_USD: 50.0
+      
+      # Rate Limiting
+      RATE_LIMIT_REQUESTS: 100
+      RATE_LIMIT_WINDOW: 60
+    volumes:
+      - ./wastask:/app
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    working_dir: /app
+    command: >
+      bash -c "
+        echo '🚀 Installing WasTask dependencies...' &&
+        pip install --no-cache-dir uv &&
+        uv pip install --system -r requirements.txt &&
+        echo '🔧 Setting up database...' &&
+        python wastask.py db setup &&
+        echo '✅ Starting WasTask API...' &&
+        uvicorn webapp:app --host 0.0.0.0 --port 8000 --reload
+      "
+    ports:
+      - "${WASTASK_PORT:-8080}:8000"
+    networks:
+      - wastask-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wastask.rule=Host(`${WASTASK_DOMAIN:-wastask.localhost}`)"
+      - "traefik.http.services.wastask.loadbalancer.server.port=8000"
+      - "com.docker.compose.project=wastask"
+
+  nginx:
+    image: nginx:alpine
+    container_name: wastask-nginx
+    restart: unless-stopped
+    depends_on:
+      - wastask-api
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./static:/var/www/html:ro
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    networks:
+      - wastask-network
+    labels:
+      - "com.docker.compose.project=wastask"
+
+  redis:
+    image: redis:7-alpine
+    container_name: wastask-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    volumes:
+      - redis_data:/data
+    networks:
+      - wastask-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    labels:
+      - "com.docker.compose.project=wastask"
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  wastask-network:
+    driver: bridge
+
+# Configurações para o Portainer
+x-portainer-settings:
+  restart_policy: unless-stopped
+  update_config:
+    parallelism: 1
+    delay: 10s
+    failure_action: rollback
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"

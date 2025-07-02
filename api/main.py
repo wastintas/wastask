@@ -12,7 +12,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database_manager import init_database_pool, close_database_pool
-from api.routes import projects_simple as projects, tasks_complete as tasks, health, auth
+from api.routes import projects_simple as projects, tasks_complete as tasks, health, auth, stack_definition
 from config.api_settings import api_settings as settings
 
 
@@ -52,6 +52,7 @@ app.include_router(health.router, tags=["health"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["projects"])
 app.include_router(tasks.router, prefix="/api/v1/tasks", tags=["tasks"])
+app.include_router(stack_definition.router, prefix="/api/v1/stack", tags=["stack-definition"])
 
 
 @app.exception_handler(Exception)

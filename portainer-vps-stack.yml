@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wastask
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-WastasksDB2024!}
+      POSTGRES_DB: wastask
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-WastasksRedis2024!}
+    volumes:
+      - redis_data:/data
+    networks:
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+
+  wastask-api:
+    image: python:3.11-slim
+    environment:
+      DATABASE_URL: postgresql://wastask:${POSTGRES_PASSWORD:-WastasksDB2024!}@postgres:5432/wastask
+      REDIS_URL: redis://:${REDIS_PASSWORD:-WastasksRedis2024!}@redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:-WastasksJWT2024SuperSecretKey32CharsMin!}
+      DEBUG: "false"
+      LOG_LEVEL: INFO
+      HOST: 0.0.0.0
+      PORT: 8000
+      BASE_URL: https://${WASTASK_DOMAIN:-wastasks.wastintas.com.br}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      COST_OPTIMIZATION_ENABLED: "true"
+      MAX_DAILY_COST_USD: 25.0
+      RATE_LIMIT_REQUESTS: 50
+      RATE_LIMIT_WINDOW: 60
+    volumes:
+      # Monta o código da VPS
+      - /opt/wastask:/app
+      - wastask_uploads:/app/uploads
+      - wastask_logs:/app/logs
+    working_dir: /app
+    command: >
+      bash -c "
+        echo '🚀 Installing dependencies...' &&
+        apt-get update -qq && apt-get install -y -qq curl git &&
+        pip install --no-cache-dir -r requirements.txt &&
+        echo '✅ Starting WasTask API...' &&
+        uvicorn webapp:app --host 0.0.0.0 --port 8000 --reload
+      "
+    networks:
+      - WasNet
+      - wastask-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      restart_policy:
+        condition: any
+      labels:
+        # Traefik configuration
+        - "traefik.enable=true"
+        - "traefik.docker.network=WasNet"
+        
+        # HTTP -> HTTPS redirect
+        - "traefik.http.routers.wastask-http.rule=Host(`${WASTASK_DOMAIN:-wastasks.wastintas.com.br}`)"
+        - "traefik.http.routers.wastask-http.entrypoints=web"
+        - "traefik.http.routers.wastask-http.middlewares=https-redirect"
+        
+        # HTTPS
+        - "traefik.http.routers.wastask.rule=Host(`${WASTASK_DOMAIN:-wastasks.wastintas.com.br}`)"
+        - "traefik.http.routers.wastask.entrypoints=websecure"
+        - "traefik.http.routers.wastask.tls=true"
+        - "traefik.http.routers.wastask.tls.certresolver=letsencrypt"
+        
+        # Service
+        - "traefik.http.services.wastask.loadbalancer.server.port=8000"
+        
+        # Middlewares
+        - "traefik.http.routers.wastask.middlewares=wastask-compress,wastask-rate-limit"
+        
+        # Rate limiting
+        - "traefik.http.middlewares.wastask-rate-limit.ratelimit.average=100"
+        - "traefik.http.middlewares.wastask-rate-limit.ratelimit.burst=50"
+        
+        # Compression
+        - "traefik.http.middlewares.wastask-compress.compress=true"
+        
+        # HTTPS redirect
+        - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+
+volumes:
+  postgres_data:
+  redis_data:
+  wastask_uploads:
+  wastask_logs:
+
+networks:
+  WasNet:
+    external: true
+  wastask-internal:
+    driver: overlay
