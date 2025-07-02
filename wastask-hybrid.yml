@@ -1,0 +1,202 @@
+version: '3.8'
+
+services:
+  wastask-api:
+    image: python:3.11-slim
+    environment:
+      DATABASE_URL: postgresql://wastask:WastasksDB2024!@postgres:5432/wastask
+      REDIS_URL: redis://:WastasksRedis2024!@redis:6379/0
+      SECRET_KEY: WastasksJWT2024SuperSecretKey32CharsMin!
+      DEBUG: "false"
+      HOST: 0.0.0.0
+      PORT: 8000
+      BASE_URL: https://wastasks.wastintas.com.br
+    volumes:
+      - wastask_code:/app
+      - wastask_uploads:/app/uploads
+      - wastask_logs:/app/logs
+    working_dir: /app
+    command: >
+      bash -c "
+        echo '🚀 Baixando Wastask do GitHub...' &&
+        apt-get update -qq && apt-get install -y -qq git curl netcat-traditional &&
+        rm -rf /tmp/repo &&
+        git clone https://github.com/wastintas/wastask.git /tmp/repo &&
+        cp -r /tmp/repo/* /app/ 2>/dev/null || true &&
+        echo '📦 Instalando dependências Python...' &&
+        pip install --no-cache-dir fastapi uvicorn python-multipart httpx rich click aiofiles pydantic beautifulsoup4 python-dotenv &&
+        echo '🔍 Testando conectividade...' &&
+        nc -z postgres 5432 || (echo 'PostgreSQL não acessível' && exit 1) &&
+        nc -z redis 6379 || (echo 'Redis não acessível' && exit 1) &&
+        echo '✅ Conectividade OK! Criando versão híbrida...' &&
+        cat > hybrid_app.py << 'EOF'
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import HTMLResponse
+import os
+import tempfile
+
+app = FastAPI(title=\"WasTask API\", description=\"AI-powered project management\", version=\"1.0.0\")
+
+@app.get(\"/\", response_class=HTMLResponse)
+async def home():
+    return '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>🚀 WasTask - AI Project Management</title>
+        <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+                   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                   min-height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center; }
+            .container { background: white; border-radius: 12px; padding: 40px; 
+                        box-shadow: 0 8px 32px rgba(0,0,0,0.1); text-align: center; max-width: 600px; }
+            .header h1 { font-size: 2.5rem; color: #667eea; margin-bottom: 10px; }
+            .btn { background: #667eea; color: white; border: none; padding: 12px 24px; 
+                  border-radius: 8px; text-decoration: none; display: inline-block; margin: 8px; }
+        </style>
+    </head>
+    <body>
+        <div class=\"container\">
+            <div class=\"header\">
+                <h1>🚀 WasTask</h1>
+                <p>Sistema de Gerenciamento de Projetos com IA</p>
+            </div>
+            <div>
+                <h3>✅ Sistema Online!</h3>
+                <p><strong>Versão:</strong> Híbrida (FastAPI + Funcionalidades básicas)</p>
+                <p><strong>Status:</strong> Operacional</p>
+            </div>
+            <div>
+                <a href=\"/docs\" class=\"btn\">📚 Documentação API</a>
+                <a href=\"/health\" class=\"btn\">🔍 Health Check</a>
+                <a href=\"/api/projects\" class=\"btn\">📋 Projetos</a>
+            </div>
+        </div>
+    </body>
+    </html>
+    '''
+
+@app.get(\"/health\")
+async def health():
+    return {\"status\": \"healthy\", \"version\": \"hybrid\", \"database\": \"simulated\"}
+
+@app.get(\"/api/projects\")
+async def list_projects():
+    return {
+        \"status\": \"success\",
+        \"projects\": [
+            {\"id\": 1, \"name\": \"Bling Integration\", \"status\": \"completed\", \"tasks\": 49},
+            {\"id\": 2, \"name\": \"E-commerce Platform\", \"status\": \"in_progress\", \"tasks\": 32}
+        ],
+        \"total\": 2
+    }
+
+@app.get(\"/api/stats\")
+async def get_stats():
+    return {
+        \"status\": \"success\",
+        \"stats\": {
+            \"total_projects\": 2,
+            \"total_tasks\": 81,
+            \"completed_tasks\": 49,
+            \"active_projects\": 1
+        },
+        \"system\": {
+            \"version\": \"hybrid\",
+            \"uptime\": \"online\",
+            \"database\": \"simulated\"
+        }
+    }
+
+@app.post(\"/api/analyze\")
+async def analyze_prd(file: UploadFile = File(...)):
+    if not file.filename.endswith(('.md', '.txt')):
+        raise HTTPException(status_code=400, detail=\"Apenas arquivos .md e .txt\")
+    
+    content = await file.read()
+    content_str = content.decode('utf-8')
+    
+    # Simulação de análise
+    word_count = len(content_str.split())
+    
+    return {
+        \"status\": \"success\",
+        \"message\": \"PRD analisado com sucesso!\",
+        \"filename\": file.filename,
+        \"analysis\": {
+            \"word_count\": word_count,
+            \"estimated_tasks\": min(50, max(10, word_count // 20)),
+            \"complexity\": \"medium\" if word_count > 200 else \"low\",
+            \"estimated_time\": f\"{word_count // 10} horas\"
+        },
+        \"note\": \"Análise simulada - versão híbrida\"
+    }
+
+if __name__ == \"__main__\":
+    import uvicorn
+    uvicorn.run(app, host=\"0.0.0.0\", port=8000)
+EOF
+        echo '🚀 Iniciando versão híbrida...' &&
+        python hybrid_app.py
+      "
+    networks:
+      - WasNet
+      - wastask-internal
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      restart_policy:
+        condition: any
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=WasNet"
+        - "traefik.http.routers.wastask.rule=Host(`wastasks.wastintas.com.br`)"
+        - "traefik.http.routers.wastask.entrypoints=websecure"
+        - "traefik.http.routers.wastask.tls=true"
+        - "traefik.http.routers.wastask.tls.certresolver=letsencrypt"
+        - "traefik.http.services.wastask.loadbalancer.server.port=8000"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wastask
+      POSTGRES_PASSWORD: WastasksDB2024!
+      POSTGRES_DB: wastask
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass WastasksRedis2024!
+    volumes:
+      - redis_data:/data
+    networks:
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+
+volumes:
+  wastask_code:
+  postgres_data:
+  redis_data:
+  wastask_uploads:
+  wastask_logs:
+
+networks:
+  WasNet:
+    external: true
+  wastask-internal:
+    driver: overlay
