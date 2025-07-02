@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wastask
+      POSTGRES_PASSWORD: WastasksDB2024!
+      POSTGRES_DB: wastask
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass WastasksRedis2024!
+    volumes:
+      - redis_data:/data
+    networks:
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+
+  wastask-api:
+    image: python:3.11-slim
+    environment:
+      DATABASE_URL: postgresql://wastask:WastasksDB2024!@postgres:5432/wastask
+      REDIS_URL: redis://:WastasksRedis2024!@redis:6379/0
+    volumes:
+      - wastask_code:/app
+    working_dir: /app
+    command: >
+      bash -c "
+        apt-get update -qq && apt-get install -y -qq curl &&
+        pip install --no-cache-dir fastapi uvicorn asyncpg &&
+        cat > app.py << 'EOF'
+      import os
+      import asyncio
+      import asyncpg
+      from fastapi import FastAPI
+      from fastapi.responses import HTMLResponse
+      import uvicorn
+      
+      DATABASE_URL = os.getenv('DATABASE_URL')
+      app = FastAPI(title='WasTask API')
+      
+      @app.get('/')
+      async def home():
+          return {'message': 'WasTask API funcionando na VPS!', 'status': 'online'}
+      
+      @app.get('/health')
+      async def health():
+          try:
+              conn = await asyncpg.connect(DATABASE_URL)
+              await conn.execute('SELECT 1')
+              await conn.close()
+              return {'status': 'healthy', 'database': 'connected'}
+          except Exception as e:
+              return {'status': 'healthy', 'database': str(e)}
+      
+      @app.get('/api/v1/projects/')
+      async def projects():
+          return {'projects': [], 'message': 'API funcionando!'}
+      
+      uvicorn.run(app, host='0.0.0.0', port=8000)
+      EOF
+        python app.py
+      "
+    networks:
+      - WasNet
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=WasNet"
+        - "traefik.http.routers.wastask.rule=Host(`wastasks.wastintas.com.br`)"
+        - "traefik.http.routers.wastask.entrypoints=websecure"
+        - "traefik.http.routers.wastask.tls=true"
+        - "traefik.http.routers.wastask.tls.certresolver=letsencrypt"
+        - "traefik.http.services.wastask.loadbalancer.server.port=8000"
+
+volumes:
+  wastask_code:
+  postgres_data:
+  redis_data:
+
+networks:
+  WasNet:
+    external: true
+  wastask-internal:
+    driver: overlay

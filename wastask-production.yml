@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wastask
+      POSTGRES_PASSWORD: WastasksDB2024!
+      POSTGRES_DB: wastask
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wastask-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wastask"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      restart_policy:
+        condition: any
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass WastasksRedis2024!
+    networks:
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+
+  wastask-api:
+    image: python:3.11-slim
+    environment:
+      DATABASE_URL: postgresql://wastask:WastasksDB2024!@postgres:5432/wastask
+      REDIS_URL: redis://:WastasksRedis2024!@redis:6379/0
+      SECRET_KEY: WastasksJWT2024SuperSecretKey32CharsMin!
+      DEBUG: "false"
+      HOST: 0.0.0.0
+      PORT: 8000
+    volumes:
+      - wastask_code:/app
+    working_dir: /app
+    command: >
+      bash -c "
+        echo '🚀 Instalando ferramentas...' &&
+        apt-get update -qq && apt-get install -y -qq git postgresql-client &&
+        
+        echo '📥 Baixando código do GitHub...' &&
+        git clone https://github.com/wastintas/wastask.git /tmp/repo &&
+        cp -r /tmp/repo/* /app/ &&
+        
+        echo '📦 Instalando dependências Python...' &&
+        pip install --no-cache-dir fastapi uvicorn[standard] python-multipart asyncpg databases[postgresql] httpx rich click aiofiles pydantic pydantic-settings beautifulsoup4 python-dotenv psutil sqlalchemy psycopg2-binary aiohttp python-jose[cryptography] passlib[bcrypt] email-validator &&
+        
+        echo '🔧 Corrigindo conexão do banco...' &&
+        sed -i 's|postgresql://wastask:password@localhost:5433/wastask|postgresql://wastask:WastasksDB2024!@postgres:5432/wastask|g' database_manager.py &&
+        
+        echo '⏳ Aguardando PostgreSQL...' &&
+        until pg_isready -h postgres -p 5432 -U wastask; do sleep 2; done &&
+        
+        echo '🗄️ Configurando banco de dados...' &&
+        PGPASSWORD='WastasksDB2024!' psql -h postgres -U wastask -d wastask -f migrations/001_initial_schema.sql 2>/dev/null || echo 'Schema já existe' &&
+        PGPASSWORD='WastasksDB2024!' psql -h postgres -U wastask -d wastask -f migrations/002_add_triggers.sql 2>/dev/null || echo 'Triggers já existem' &&
+        PGPASSWORD='WastasksDB2024!' psql -h postgres -U wastask -d wastask -f migrations/004_users_table.sql 2>/dev/null || echo 'Users já existe' &&
+        
+        echo '✅ Iniciando Wastask API...' &&
+        python -m uvicorn api.main:app --host 0.0.0.0 --port 8000
+      "
+    networks:
+      - WasNet
+      - wastask-internal
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 180s
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 10s
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=WasNet"
+        - "traefik.http.routers.wastask.rule=Host(`wastasks.wastintas.com.br`)"
+        - "traefik.http.routers.wastask.entrypoints=websecure"
+        - "traefik.http.routers.wastask.tls=true"
+        - "traefik.http.routers.wastask.tls.certresolver=letsencrypt"
+        - "traefik.http.services.wastask.loadbalancer.server.port=8000"
+
+volumes:
+  wastask_code:
+  postgres_data:
+
+networks:
+  WasNet:
+    external: true
+  wastask-internal:
+    driver: overlay

@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wastask
+      POSTGRES_PASSWORD: WastasksDB2024!
+      POSTGRES_DB: wastask
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass WastasksRedis2024!
+    volumes:
+      - redis_data:/data
+    networks:
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+
+  wastask-api:
+    image: python:3.11-slim
+    environment:
+      DATABASE_URL: postgresql://wastask:WastasksDB2024!@postgres:5432/wastask
+    volumes:
+      - wastask_code:/app
+    working_dir: /app
+    command: >
+      bash -c "
+      apt-get update -qq && apt-get install -y -qq curl &&
+      pip install --no-cache-dir fastapi uvicorn asyncpg &&
+      python -c \"
+      from fastapi import FastAPI;
+      import uvicorn;
+      app = FastAPI();
+      @app.get('/');
+      def home(): return {'status': 'online'};
+      @app.get('/health');
+      def health(): return {'status': 'healthy'};
+      uvicorn.run(app, host='0.0.0.0', port=8000)
+      \"
+      "
+    networks:
+      - WasNet
+      - wastask-internal
+    deploy:
+      restart_policy:
+        condition: any
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=WasNet"
+        - "traefik.http.routers.wastask.rule=Host(`wastasks.wastintas.com.br`)"
+        - "traefik.http.routers.wastask.entrypoints=websecure"
+        - "traefik.http.routers.wastask.tls=true"
+        - "traefik.http.routers.wastask.tls.certresolver=letsencrypt"
+        - "traefik.http.services.wastask.loadbalancer.server.port=8000"
+
+volumes:
+  wastask_code:
+  postgres_data:
+  redis_data:
+
+networks:
+  WasNet:
+    external: true
+  wastask-internal:
+    driver: overlay

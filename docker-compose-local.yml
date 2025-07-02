@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wastask
+      POSTGRES_PASSWORD: WastasksDB2024!
+      POSTGRES_DB: wastask
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    command: redis-server --requirepass WastasksRedis2024!
+
+  wastask-api:
+    image: python:3.11-slim
+    environment:
+      DATABASE_URL: postgresql://wastask:WastasksDB2024!@postgres:5432/wastask
+      REDIS_URL: redis://:WastasksRedis2024!@redis:6379/0
+    volumes:
+      - .:/app
+    working_dir: /app
+    ports:
+      - "8001:8000"
+    command: sleep infinity
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  postgres_data:

@@ -17,7 +17,7 @@ class WasTaskDatabase:
     
     def _get_default_connection(self) -> str:
         """Configuração padrão de conexão com PostgreSQL"""
-        return "postgresql://wastask:password@localhost:5433/wastask"
+        return "postgresql://wastask:WastasksDB2024!@postgres:5432/wastask"
     
     async def initialize(self):
         """Inicializar pool de conexões"""
@@ -354,7 +354,7 @@ async def init_database_pool(connection_string: str = None):
     """Initialize the database pool singleton"""
     global _db_pool
     if _db_pool is None:
-        connection_string = connection_string or "postgresql://wastask:password@localhost:5433/wastask"
+        connection_string = connection_string or "postgresql://wastask:WastasksDB2024!@postgres:5432/wastask"
         _db_pool = await asyncpg.create_pool(connection_string)
         print("✅ Database connection pool created")
     return _db_pool
